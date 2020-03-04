@@ -20,26 +20,21 @@
       - user: omero
         password: omero
         databases: [omero]
-    postgresql_version: "9.6"
-
+    postgresql_version: "11"
 
 - hosts: omero-server
   roles:
     - role: ome.omero_server
-      ice_python_wheel: "https://github.com/ome/zeroc-ice-py-centos7/releases/\
-        download/0.1.0/zeroc_ice-3.6.4-cp27-cp27mu-linux_x86_64.whl"
-
 
   vars:
     omero_server_dbhost: >-
       {{ hostvars['omero-database'].ansible_eth0.ipv4.address }}
+    postgresql_version: "11"
 
 
 - hosts: omero-web
   roles:
     - role: ome.omero_web
-      ice_python_wheel: "https://github.com/ome/zeroc-ice-py-centos7/releases/\
-        download/0.1.0/zeroc_ice-3.6.4-cp27-cp27mu-linux_x86_64.whl"
 
   vars:
     omero_web_config_set:
