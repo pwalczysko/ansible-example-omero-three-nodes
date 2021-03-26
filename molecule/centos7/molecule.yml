@@ -8,17 +8,14 @@ lint:
 platforms:
   - name: omero-database
     image: centos/systemd
-    image_version: latest
     privileged: true
     command: /sbin/init
   - name: omero-server
     image: centos/systemd
-    image_version: latest
     privileged: true
     command: /sbin/init
   - name: omero-web
     image: centos/systemd
-    image_version: latest
     privileged: true
     command: /sbin/init
 provisioner:
@@ -26,17 +23,11 @@ provisioner:
   lint:
     name: ansible-lint
   playbooks:
-    prepare: prepare.yml
     converge: ../../playbook.yml
-  inventory:
-    host_vars:
-      omero-server:
-        omero_server_systemd_require_network: false
-      omero-database:
-        postgresql_version: "10"
 scenario:
-  name: default
+  name: centos7
 verifier:
   name: testinfra
+  directory: ../resources/tests/
   lint:
     name: flake8
