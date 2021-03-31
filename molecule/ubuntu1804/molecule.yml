@@ -29,6 +29,7 @@ provisioner:
   lint:
     name: ansible-lint
   playbooks:
+    prepare: ../resources/prepare.yml
     converge: ../../playbook.yml
 scenario:
   name: ubuntu1804
