@@ -14,12 +14,18 @@ def test_services_running_and_enabled(host):
 
 
 def test_postgres_not_installed(host):
-    service = host.service('postgresql-9.6')
+    if host.system_info.distribution == 'ubuntu':
+        service = host.service('postgresql@11-main')
+    else:
+        service = host.service('postgresql-11')
     assert not service.is_running
     assert not service.is_enabled
 
 
-def test_omero_login(host):
+def test_omero_login(host, monkeypatch):
+    # Ubuntu sudo doesn't set HOME so it tries to write to /root
+    from time import time
+    env = 'OMERO_USERDIR=/tmp/omero-{}'.format(time())
     with host.sudo('omero-server'):
         host.check_output(
-            '%s login -C -s localhost -u root -w omero' % OMERO)
+            '%s %s login -C -s localhost -u root -w omero' % (env, OMERO))

@@ -6,6 +6,9 @@ testinfra_hosts = testinfra.utils.ansible_runner.AnsibleRunner(
 
 
 def test_services_running_and_enabled(host):
-    service = host.service('postgresql-11')
+    if host.system_info.distribution == 'ubuntu':
+        service = host.service('postgresql@11-main')
+    else:
+        service = host.service('postgresql-11')
     assert service.is_running
     assert service.is_enabled
