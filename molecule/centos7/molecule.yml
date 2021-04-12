@@ -1,0 +1,34 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+lint:
+  name: yamllint
+platforms:
+  - name: omero-database
+    image: centos/systemd
+    privileged: true
+    command: /sbin/init
+  - name: omero-server
+    image: centos/systemd
+    privileged: true
+    command: /sbin/init
+  - name: omero-web
+    image: centos/systemd
+    privileged: true
+    command: /sbin/init
+provisioner:
+  name: ansible
+  lint:
+    name: ansible-lint
+  playbooks:
+    prepare: ../resources/prepare.yml
+    converge: ../../playbook.yml
+scenario:
+  name: centos7
+verifier:
+  name: testinfra
+  directory: ../resources/tests/
+  lint:
+    name: flake8
