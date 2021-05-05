@@ -40,6 +40,7 @@
 
 - hosts: omero-web
   roles:
+    - role: ome.basedeps
     - role: ome.omero_web
 
   vars:
