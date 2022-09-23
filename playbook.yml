@@ -10,7 +10,36 @@
       include_vars: "{{ ansible_facts['os_family'] | lower }}.yml"
       when: ansible_facts['os_family'] == "Debian"
 
-- hosts: omero-database
+# gather cross-host vars
+- hosts: all
+  tasks:
+    - name: Get omero IP addresses
+      set_fact:
+        omero_database_address: >-
+          {{ hostvars[groups['omero_database'][0]].ansible_default_ipv4.address }}
+        omero_server_address: >-
+            {{ hostvars[groups['omero_server'][0]].ansible_default_ipv4.address }}
+
+# turn off firewall for internal hosts (not for production!)
+- hosts: all
+  roles:
+    - role: ome.iptables_raw
+
+  tasks:
+    - name: Iptables internal hosts allow all
+      become: yes
+      iptables_raw_25:
+        name: default_accept
+        keep_unmanaged: no
+        rules: |
+          -A INPUT -j ACCEPT
+          -A FORWARD -j ACCEPT
+          -A OUTPUT -j ACCEPT
+        state: present
+        # Highest priority
+        weight: 0
+
+- hosts: omero_database
   roles:
     - role: ome.postgresql
 
@@ -29,20 +58,17 @@
         databases: []
     postgresql_version: "16"
 
-- hosts: omero-server
+- hosts: omero_server
   roles:
     - role: ome.omero_server
 
   vars:
-    omero_server_dbhost: >-
-      {{ hostvars['omero-database'].ansible_eth0.ipv4.address }}
-    postgresql_version: "16"
+    omero_server_dbhost: "{{ omero_database_address }}"
     postgresql_version: "16"
     omero_server_dbuser: omero
     omero_server_dbpassword: omero
 
-
-- hosts: omero-web
+- hosts: omero_web
   roles:
     - role: ome.basedeps
     - role: ome.omero_web
@@ -50,5 +76,4 @@
   vars:
     omero_web_config_set:
       omero.web.server_list:
-        - ["{{ hostvars['omero-server'].ansible_eth0.ipv4.address }}",
-           4064, omero]
+        - ["{{ omero_server_address }}", 4064, omero]
