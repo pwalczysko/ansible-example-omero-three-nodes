@@ -19,29 +19,26 @@
           {{ hostvars[groups['omero_database'][0]].ansible_default_ipv4.address }}
         omero_server_address: >-
             {{ hostvars[groups['omero_server'][0]].ansible_default_ipv4.address }}
+        omero_web_address: >-
+            {{ hostvars[groups['omero_web'][0]].ansible_default_ipv4.address }}
 
-# turn off firewall for internal hosts (not for production!)
-- hosts: all
+- hosts: omero_database
   roles:
+    - role: ome.postgresql
     - role: ome.iptables_raw
 
   tasks:
     - name: Iptables internal hosts allow all
       become: yes
       iptables_raw_25:
-        name: default_accept
+        name: database_accept
         keep_unmanaged: no
         rules: |
-          -A INPUT -j ACCEPT
-          -A FORWARD -j ACCEPT
-          -A OUTPUT -j ACCEPT
+          -A INPUT -p tcp -m tcp --dport 22 -j ACCEPT
+          -A INPUT -p tcp --dport 5432 -s {{ omero_server_address }} -j ACCEPT          
         state: present
         # Highest priority
         weight: 0
-
-- hosts: omero_database
-  roles:
-    - role: ome.postgresql
 
   vars:
     postgresql_server_listen: "'*'"
@@ -61,6 +58,7 @@
 - hosts: omero_server
   roles:
     - role: ome.omero_server
+    - role: ome.iptables_raw
 
   vars:
     omero_server_dbhost: "{{ omero_database_address }}"
@@ -77,3 +75,59 @@
     omero_web_config_set:
       omero.web.server_list:
         - ["{{ omero_server_address }}", 4064, omero]
+
+
+- hosts: omero_server omero_web
+
+  roles:
+    - role: ome.iptables_raw
+
+  tasks:
+    # Allow:
+    # - all established/related in/out
+    # - all internal localhost connections
+    # - all internal traffic
+    # - ICMP echo (ping)
+    # - ssh incoming connections
+    # - Public IDR ports
+    - name: Iptables ssh and related
+      become: yes
+      iptables_raw_25:
+        name: default_and_omero_external
+        keep_unmanaged: no
+        rules: |
+          -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+          -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+          -A INPUT -i lo -j ACCEPT
+          -A INPUT -p icmp --icmp-type echo-request -j ACCEPT
+          -A INPUT -p tcp -m tcp --dport 22 -j ACCEPT
+          -A INPUT -p tcp -m multiport --dports {{ idr_external_tcp_ports | join(',' ) }} -j ACCEPT
+        state: present
+        # Highest priority
+        weight: 0
+
+    # Use a low priority REJECT rule so that clients can detect when
+    # they've been rejected
+    # The alternative of setting a default DROP policy will leave them
+    # hanging until they timeout, though this may be preferable for public
+    # servers:
+    # http://www.chiark.greenend.org.uk/~peterb/network/drop-vs-reject
+    - name: Iptables default
+      become: yes
+      iptables_raw_25:
+        name: default_reject
+        rules: |
+          -A INPUT -j REJECT
+          -A FORWARD -j REJECT
+          -A OUTPUT -j ACCEPT
+        state: present
+        # Lowest priority
+        weight: 99
+
+  vars:
+    idr_external_tcp_ports:
+      - 80
+      - 443
+      - 4063
+      - 4064
+      - "14060:14079"
