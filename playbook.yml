@@ -26,7 +26,7 @@
       - user: omero
         password: omero
         databases: [omero]
-    postgresql_version: "11"
+    postgresql_version: "16"
 
 - hosts: omero-server
   roles:
@@ -35,7 +35,10 @@
   vars:
     omero_server_dbhost: >-
       {{ hostvars['omero-database'].ansible_eth0.ipv4.address }}
-    postgresql_version: "11"
+    postgresql_version: "16"
+    postgresql_version: "16"
+    omero_server_dbuser: omero
+    omero_server_dbpassword: omero
 
 
 - hosts: omero-web

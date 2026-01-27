@@ -15,9 +15,9 @@ def test_services_running_and_enabled(host):
 
 def test_postgres_not_installed(host):
     if host.system_info.distribution == 'ubuntu':
-        service = host.service('postgresql@11-main')
+        service = host.service('postgresql@16-main')
     else:
-        service = host.service('postgresql-11')
+        service = host.service('postgresql-16')
     assert not service.is_running
     assert not service.is_enabled
 
