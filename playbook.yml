@@ -22,10 +22,11 @@
         address: 0.0.0.0/0
     postgresql_databases:
       - name: omero
+        owner: omero
     postgresql_users:
       - user: omero
         password: omero
-        databases: [omero]
+        databases: []
     postgresql_version: "16"
 
 - hosts: omero-server
