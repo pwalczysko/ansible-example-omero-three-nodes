@@ -1,0 +1,59 @@
+---
+dependency:
+  name: galaxy
+  options:
+    role-file: requirements.yml
+driver:
+  name: docker
+lint: |
+    yamllint .
+    ansible-lint
+    flake8
+platforms:
+  - name: omero-database
+    image: eniocarboni/docker-ubuntu-systemd:22.04
+    image_version: latest
+    privileged: true
+    command: /sbin/init
+    cgroupns_mode: host
+    tmpfs:
+      - /sys/fs/cgroup
+    groups:
+      - docker-hosts
+      - omero-py3
+      - ome-demoservers
+  - name: omero-server
+    image: eniocarboni/docker-ubuntu-systemd:22.04
+    image_version: latest
+    privileged: true
+    command: /sbin/init
+    cgroupns_mode: host
+    tmpfs:
+      - /sys/fs/cgroup
+    groups:
+      - docker-hosts
+      - omero-py3
+      - ome-demoservers
+  - name: omero-web
+    image: eniocarboni/docker-ubuntu-systemd:22.04
+    image_version: latest
+    privileged: true
+    command: /sbin/init
+    cgroupns_mode: host
+    tmpfs:
+      - /sys/fs/cgroup
+    groups:
+      - docker-hosts
+      - omero-py3
+      - ome-demoservers
+provisioner:
+  name: ansible
+  lint:
+    name: ansible-lint
+  playbooks:
+    converge: ../../playbook.yml
+scenario:
+  name: ubuntu2204
+verifier:
+  name: testinfra
+  directory: ../resources/tests/
